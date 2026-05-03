@@ -31,6 +31,22 @@ module "zesty_readonly" {
 
 ## Upgrade To Full CM
 
-To move from read-only evaluation to active CM automation, switch to the full management-account module and import or move Terraform state for the AWS resources, or use the full module from the beginning with `CM` active. The intended end state is one Zesty IAM role per AWS account, owned by Terraform.
+To move from read-only evaluation to active CM automation, keep the same Terraform module block name and change only the module source to the full management-account module:
+
+```hcl
+module "zesty_management_account" {
+  source = "zesty-co/aws-management-account-readonly/zesty"
+}
+```
+
+becomes:
+
+```hcl
+module "zesty_management_account" {
+  source = "zesty-co/aws-management-account/zesty"
+}
+```
+
+Keeping the same module block name keeps the Terraform resource addresses stable, so Terraform updates the existing IAM role policy and `zesty_account` registration instead of creating a second role. If the module block name changes too, move the state addresses first.
 
 Do not onboard the same account through the UI/CloudFormation flow after Terraform owns these resources. UI to Terraform interoperability is tracked separately under PLAT-125.
