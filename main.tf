@@ -212,9 +212,12 @@ resource "aws_cur_report_definition" "zesty_cur" {
   depends_on = [aws_s3_bucket_policy.cur_bucket_policy]
 }
 
-resource "null_resource" "wait_for_iam" {
-  provisioner "local-exec" {
-    command = "sleep 10"
+resource "time_sleep" "wait_for_iam" {
+  create_duration = var.iam_propagation_delay
+
+  triggers = {
+    role_policy   = aws_iam_role.zesty_iam_role.assume_role_policy
+    inline_policy = aws_iam_role_policy.zesty_policy.policy
   }
 
   depends_on = [aws_iam_role_policy.zesty_policy]
@@ -238,6 +241,6 @@ resource "zesty_account" "this" {
   depends_on = [
     aws_cur_report_definition.zesty_cur,
     aws_iam_role_policy.zesty_policy,
-    null_resource.wait_for_iam
+    time_sleep.wait_for_iam
   ]
 }

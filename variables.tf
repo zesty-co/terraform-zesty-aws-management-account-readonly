@@ -52,6 +52,12 @@ variable "force_destroy_cur_bucket" {
   default     = false
 }
 
+variable "iam_propagation_delay" {
+  description = "Duration to wait after IAM role policy changes before calling Zesty validation."
+  type        = string
+  default     = "20s"
+}
+
 variable "tags" {
   description = "Tags applied to created AWS resources that support tagging."
   type        = map(string)

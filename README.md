@@ -18,7 +18,7 @@ provider "zesty" {
   token = var.zesty_api_token
 }
 
-module "zesty_readonly" {
+module "zesty_management_account" {
   source = "zesty-co/aws-management-account-readonly/zesty"
 }
 ```
@@ -50,3 +50,13 @@ module "zesty_management_account" {
 Keeping the same module block name keeps the Terraform resource addresses stable, so Terraform updates the existing IAM role policy and `zesty_account` registration instead of creating a second role. If the module block name changes too, move the state addresses first.
 
 Do not onboard the same account through the UI/CloudFormation flow after Terraform owns these resources. UI to Terraform interoperability is tracked separately under PLAT-125.
+
+## Existing UI/CloudFormation Accounts
+
+This module creates the CUR bucket name as `${cur_s3_bucket_prefix}-${account_id}`. If the same AWS management account was already onboarded through the UI/CloudFormation flow, that bucket or CUR report can already exist and Terraform will fail during creation.
+
+For PLAT-124, use this module for Terraform-owned onboarding only. UI/CloudFormation import and migration guidance belongs to PLAT-125.
+
+## Destroy Behavior
+
+`terraform destroy` removes AWS resources managed by this module and calls the `zesty_account` delete path. The current backend removes the Terraform onboarding account record, but broader product/platform offboarding is not guaranteed by this module. Confirm the intended offboarding behavior with Zesty before using destroy for production customer offboarding.
