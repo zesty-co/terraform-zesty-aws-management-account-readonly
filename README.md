@@ -1,10 +1,34 @@
-# Zesty AWS Management Account Read-Only Onboarding
+# Superseded: Zesty AWS Management Account Read-Only Onboarding
 
-This module onboards an AWS management account to Zesty in read-only mode for Commitment Manager evaluation.
+This repository was created during PLAT-124 exploration and has been superseded by the single Zesty AWS management-account module.
 
-Use this when a customer wants to grant Zesty management-account visibility through Terraform before enabling CM automation.
+Use `zesty-co/aws-management-account/zesty` with `cm_access_mode = "readonly"` instead:
 
-It creates:
+```hcl
+provider "zesty" {
+  token = var.zesty_api_token
+}
+
+module "zesty_management_account" {
+  source = "zesty-co/aws-management-account/zesty"
+
+  cm_access_mode = "readonly"
+}
+```
+
+To enable full CM automation later, keep the same module block and change only:
+
+```hcl
+cm_access_mode = "full"
+```
+
+The single-module approach avoids duplicate IAM policy maintenance and avoids the Terraform state footgun of changing module sources during read-only to full CM upgrades.
+
+## Original Scope
+
+This repository's original implementation onboarded an AWS management account to Zesty in read-only mode for Commitment Manager evaluation.
+
+It created:
 
 - An IAM role trusted by the Zesty AWS account
 - Read-only account, Cost Explorer, Organizations, Savings Plans, EKS, and CUR permissions
@@ -13,15 +37,7 @@ It creates:
 - A CM product registration with `active = false`
 - A `zesty_account` registration using the existing `zesty` Terraform provider
 
-```hcl
-provider "zesty" {
-  token = var.zesty_api_token
-}
-
-module "zesty_management_account" {
-  source = "zesty-co/aws-management-account-readonly/zesty"
-}
-```
+Do not publish this repository as a Terraform Registry module for PLAT-124.
 
 ## Prerequisites
 
@@ -29,34 +45,12 @@ module "zesty_management_account" {
 - AWS credentials for the target AWS Organizations management account
 - A Zesty Terraform API token for the `zesty` provider
 
-## Upgrade To Full CM
-
-To move from read-only evaluation to active CM automation, keep the same Terraform module block name and change only the module source to the full management-account module:
-
-```hcl
-module "zesty_management_account" {
-  source = "zesty-co/aws-management-account-readonly/zesty"
-}
-```
-
-becomes:
-
-```hcl
-module "zesty_management_account" {
-  source = "zesty-co/aws-management-account/zesty"
-}
-```
-
-Keeping the same module block name keeps the Terraform resource addresses stable, so Terraform updates the existing IAM role policy and `zesty_account` registration instead of creating a second role. If the module block name changes too, move the state addresses first.
-
-Do not onboard the same account through the UI/CloudFormation flow after Terraform owns these resources. UI to Terraform interoperability is tracked separately under PLAT-125.
-
 ## Existing UI/CloudFormation Accounts
 
-This module creates the CUR bucket name as `${cur_s3_bucket_prefix}-${account_id}`. If the same AWS management account was already onboarded through the UI/CloudFormation flow, that bucket or CUR report can already exist and Terraform will fail during creation.
+The single module creates the CUR bucket name as `${cur_s3_bucket_prefix}-${account_id}`. If the same AWS management account was already onboarded through the UI/CloudFormation flow, that bucket or CUR report can already exist and Terraform will fail during creation.
 
-For PLAT-124, use this module for Terraform-owned onboarding only. UI/CloudFormation import and migration guidance belongs to PLAT-125.
+For PLAT-124, use Terraform-owned onboarding only. UI/CloudFormation import and migration guidance belongs to PLAT-125.
 
 ## Destroy Behavior
 
-`terraform destroy` removes AWS resources managed by this module and calls the `zesty_account` delete path. The current backend removes the Terraform onboarding account record, but broader product/platform offboarding is not guaranteed by this module. Confirm the intended offboarding behavior with Zesty before using destroy for production customer offboarding.
+`terraform destroy` removes AWS resources managed by the single module and calls the `zesty_account` delete path. The current backend removes the Terraform onboarding account record, but broader product/platform offboarding is not guaranteed by the module. Confirm the intended offboarding behavior with Zesty before using destroy for production customer offboarding.
